@@ -97,7 +97,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
     }
   }
 
-  // * fooditemm = [fish0, chicken1, prawns2, mutton3]
   function mapIdtoProduct(productId) {
     let id = Number(productId);
     if (id <= foodItems.length) {
@@ -402,6 +401,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
                     item: name,
                     Quantity: productArr[1],
                   });
+
                 res.send(
                   'please enter next item and quantity\npress x to finish'
                 );
@@ -442,6 +442,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
                     .child('Product')
                     .child(productArr[0])
                     .set({
+                      item: currentProduct[1],
                       Quantity: productArr[1],
                     });
 
