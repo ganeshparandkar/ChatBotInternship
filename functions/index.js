@@ -8,8 +8,10 @@ const keys = require('./key.json');
 /* -----
 Spreadsheet connectivity
 -------*/
-var sheetData = [];
-var sheetProducts = [];
+let sheetData = [];
+let sheetProducts = [];
+let foodItems = [];
+
 const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
   'https://www.googleapis.com/auth/spreadsheets',
 ]);
@@ -23,7 +25,9 @@ client.authorize((err, tokens) => {
     gsrun(client).then((data) => {
       sheetData = data[0];
       sheetProducts = data[1];
-      // console.log(sheetData, '\n', sheetProducts);
+      let temp = sheetProducts.map((e) => e[1].toUpperCase());
+      foodItems = temp;
+      console.log(temp);
     });
   }
 });
@@ -83,6 +87,27 @@ exports.apicall = functions.https.onRequest((req, res) => {
     }
   }
 
+  function mapProducttoId(params) {
+    let data = params.toUpperCase();
+    if (foodItems.includes(data)) {
+      let index = foodItems.indexOf(data);
+      return index + 1;
+    } else {
+      return null;
+    }
+  }
+
+  // * fooditemm = [fish0, chicken1, prawns2, mutton3]
+  function mapIdtoProduct(productId) {
+    let id = Number(productId);
+    if (id <= foodItems.length) {
+      id = id - 1;
+      return foodItems[id];
+    } else {
+      return `please choose correct product Id`;
+    }
+  }
+
   function getImageandDish(id) {
     id = id.toString();
     let dish, url, arr;
@@ -116,6 +141,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
   ];
 
   if (req.method == 'POST') {
+    console.log(sheetProducts);
     if (inputdata == 'cls') {
       database.ref('chatbot').child(userData.sender.phone.toString()).remove();
     }
@@ -288,6 +314,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             res.send('please enter valid Input!');
           }
         }
+
         if (count == 1) {
           var cityPoints = checkPin(inputdata);
 
@@ -344,19 +371,17 @@ exports.apicall = functions.https.onRequest((req, res) => {
         }
         if (count == 3) {
           let data = inputdata.toUpperCase();
+          var productArr = inputdata.split(' ');
+
+          // !---------------------------------------------------------
           if (data != 'X') {
-            var productArr = inputdata.split(' ');
-            console.log('productArr = ', productArr);
-            if (productArr.length >= 1) {
-              try {
-                var currentProduct = getImageandDish(productArr[0]);
-              } catch (error) {
-                res.send(
-                  'We Dont Have That Product Please Check Again and Order another product!'
-                );
-              }
-              console.log('currentProduct = ', currentProduct);
-              if (currentProduct) {
+            if (isNaN(productArr[0])) {
+              //! its product name or other name
+
+              let name = productArr[0];
+              let productId = mapProducttoId(name);
+
+              if (productId != null) {
                 database
                   .ref(`chatbot`)
                   .child(phone)
@@ -372,11 +397,11 @@ exports.apicall = functions.https.onRequest((req, res) => {
                   .child('History')
                   .child(mainTimestamp)
                   .child('Product')
-                  .child(productArr[0])
+                  .child(productId)
                   .set({
+                    item: name,
                     Quantity: productArr[1],
                   });
-
                 res.send(
                   'please enter next item and quantity\npress x to finish'
                 );
@@ -386,9 +411,55 @@ exports.apicall = functions.https.onRequest((req, res) => {
                 );
               }
             } else {
-              res.send('Please Enter Valid Input');
+              //! it is a number
+
+              if (productArr.length >= 1) {
+                try {
+                  var currentProduct = getImageandDish(productArr[0]);
+                } catch (error) {
+                  res.send(
+                    'We Dont Have That Product Please Check Again and Order another product!'
+                  );
+                }
+
+                console.log('currentProduct = ', currentProduct);
+
+                if (currentProduct) {
+                  database
+                    .ref(`chatbot`)
+                    .child(phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('Messages')
+                    .child(time)
+                    .set(inputdata);
+
+                  database
+                    .ref('chatbot')
+                    .child(userData.sender.phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('Product')
+                    .child(productArr[0])
+                    .set({
+                      Quantity: productArr[1],
+                    });
+
+                  res.send(
+                    'please enter next item and quantity\npress x to finish'
+                  );
+                } else {
+                  res.send(
+                    'We Dont Have That Product Please Check Again and Order another product!'
+                  );
+                }
+              } else {
+                res.send('Please Enter Valid Input');
+              }
             }
           } else {
+            //here you will terminate the loop Input is X
+
             database
               .ref('chatbot')
               .child(phone)
@@ -417,6 +488,10 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .set(pId);
             res.send(`How would you like the cut for ${productarr[1]} ?`);
           }
+
+          // !---------------------------------------------------------
+
+          console.log(productArr[0]);
         }
 
         if (count == 4) {
@@ -597,7 +672,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
         areaCode,
         'New',
       ];
-      console.log(saveDataArray);
+      // console.log(saveDataArray);
       second();
 
       function second() {
