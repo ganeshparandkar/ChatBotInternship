@@ -12,22 +12,44 @@ let sheetData = [];
 let sheetProducts = [];
 let foodItems = [];
 
+admin.initializeApp({
+  databaseURL: 'https://ct-chat-bot-2021-default-rtdb.firebaseio.com',
+});
+let database = admin.database();
+
 const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
   'https://www.googleapis.com/auth/spreadsheets',
 ]);
 
+function arrtoobject(array) {
+  return array.reduce(function (result, currentArray) {
+    result[currentArray[0]] = currentArray[1];
+    return result;
+  }, {});
+}
+
 client.authorize((err, tokens) => {
   if (err) {
-    console.log(err);
+    // console.log(err);
     return; // just get out from the function
   } else {
     // console.log('Connected');
     gsrun(client).then((data) => {
       sheetData = data[0];
+      let areaData = arrtoobject(sheetData);
+
       sheetProducts = data[1];
+      let productDetails = arrtoobject(sheetProducts);
+
       let temp = sheetProducts.map((e) => e[1].toUpperCase());
       foodItems = temp;
-      console.log(temp);
+      database.ref('chatbot').child('MyData').child('foodItem').set(temp);
+      database
+        .ref('chatbot')
+        .child('MyData')
+        .child('SheetProduct')
+        .set(productDetails);
+      database.ref('chatbot').child('MyData').child('SheetArea').set(areaData);
     });
   }
 });
@@ -42,31 +64,26 @@ var gsrun = async (cl) => {
     auth: cl,
   });
 
-  const options = {
-    spreadsheetId: '1PorRlxlCbXveAtXBicBGfn6UFGVt9VZ5hqDtyBzOW9Q', // pincode and address sheet
+  const Areasheet = {
+    spreadsheetId: '1PorRlxlCbXveAtXBicBGfn6UFGVt9VZ5hqDtyBzOW9Q', // Pincodes Area address
     range: 'Sheet1!A1:B100',
   };
 
   const productSheet = {
-    spreadsheetId: '1kK2_2s3kwhAzK2LrwFfOFXZWl45WD-wr0fSgOpqrgDw', // pincode and address sheet
+    spreadsheetId: '1kK2_2s3kwhAzK2LrwFfOFXZWl45WD-wr0fSgOpqrgDw', // food menus
     range: 'Sheet1!A1:C100',
   };
 
-  let data = await gsapi.spreadsheets.values.get(options);
-  let dataArray = data.data.values;
+  let data = await gsapi.spreadsheets.values.get(Areasheet);
+  let areaSheet = data.data.values;
 
   let products = await gsapi.spreadsheets.values.get(productSheet);
   let productArr = products.data.values;
 
-  let sheets = [dataArray, productArr];
+  let sheets = [areaSheet, productArr];
 
   return sheets;
 };
-
-admin.initializeApp({
-  databaseURL: 'https://ct-chat-bot-2021-default-rtdb.firebaseio.com',
-});
-var database = admin.database();
 
 exports.apicall = functions.https.onRequest((req, res) => {
   function checkPin(inputpin) {
@@ -74,36 +91,13 @@ exports.apicall = functions.https.onRequest((req, res) => {
     sheetData.map((e) => {
       pincodeslocal.push(e[0]);
     });
-    // console.log(pincodeslocal);
     if (pincodeslocal.includes(inputpin.toString())) {
       let placesAtPincode = '';
       let index = pincodeslocal.indexOf(inputpin.toString());
       placesAtPincode = sheetData[[index]][1];
-      // console.log('index is ', index);
-      // console.log('infunction ', placesAtPincode);
       return placesAtPincode;
     } else {
       return 'NotFound';
-    }
-  }
-
-  function mapProducttoId(params) {
-    let data = params.toUpperCase();
-    if (foodItems.includes(data)) {
-      let index = foodItems.indexOf(data);
-      return index + 1;
-    } else {
-      return null;
-    }
-  }
-
-  function mapIdtoProduct(productId) {
-    let id = Number(productId);
-    if (id <= foodItems.length) {
-      id = id - 1;
-      return foodItems[id];
-    } else {
-      return `please choose correct product Id`;
     }
   }
 
@@ -140,14 +134,13 @@ exports.apicall = functions.https.onRequest((req, res) => {
   ];
 
   if (req.method == 'POST') {
-    console.log(sheetProducts);
     if (inputdata == 'cls') {
       database.ref('chatbot').child(userData.sender.phone.toString()).remove();
     }
-    var date, time, timestamp;
+    var date, time, timestamp, phone;
 
     database.ref('chatbot').once('value', (snap) => {
-      let phone = userData.sender.phone.toString();
+      phone = userData.sender.phone.toString();
 
       if (snap.hasChild(phone)) {
         let mainTimestamp = snap.child(phone).val().timestamp;
@@ -156,8 +149,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
           .child('History')
           .child(mainTimestamp)
           .val().count;
-
-        // console.log(`count = ${count}, timestamp = ${mainTimestamp}`);
 
         var todayDateTime = new Date().toLocaleString('en-US', {
           timeZone: 'Asia/Kolkata',
@@ -317,7 +308,12 @@ exports.apicall = functions.https.onRequest((req, res) => {
         if (count == 1) {
           var cityPoints = checkPin(inputdata);
 
-          if (cityPoints != 'NotFound') {
+          let areaAndPincodeSheet = snap
+            .child('MyData')
+            .child('SheetArea')
+            .val();
+          if (Object.keys(areaAndPincodeSheet).includes(inputdata)) {
+            let index = Object.keys(areaAndPincodeSheet).indexOf(inputdata);
             database
               .ref('chatbot')
               .child(userData.sender.phone)
@@ -339,11 +335,41 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child(time)
               .set(inputdata);
             res.send(
-              `We serve the following areas,\n ${cityPoints.toString()},\n please choose an area.`
+              `We serve the following areas,\n ${
+                Object.values(areaAndPincodeSheet)[index]
+              },\n please choose an area.`
             );
           } else {
             res.send('We dont provide out services to this address');
           }
+
+          // if (cityPoints != 'NotFound') {
+          // database
+          //   .ref('chatbot')
+          //   .child(userData.sender.phone)
+          //   .child('pincode')
+          //   .set(inputdata);
+          // database
+          //   .ref('chatbot')
+          //   .child(phone)
+          //   .child('History')
+          //   .child(mainTimestamp)
+          //   .child('count')
+          //   .set(2);
+          // database
+          //   .ref(`chatbot`)
+          //   .child(phone)
+          //   .child('History')
+          //   .child(mainTimestamp)
+          //   .child('Messages')
+          //   .child(time)
+          //   .set(inputdata);
+          // res.send(
+          //   `We serve the following areas,\n ${cityPoints.toString()},\n please choose an area.`
+          // );
+          // } else {
+          // res.send('We dont provide out services to this address');
+          // }
         }
         if (count == 2) {
           database
@@ -369,18 +395,14 @@ exports.apicall = functions.https.onRequest((req, res) => {
           res.send(menuCard);
         }
         if (count == 3) {
-          let data = inputdata.toUpperCase();
           var productArr = inputdata.split(' ');
-
-          // !---------------------------------------------------------
-          if (data != 'X') {
+          let name = productArr[0].toUpperCase();
+          if (name != 'X') {
             if (isNaN(productArr[0])) {
               //! its product name or other name
-
-              let name = productArr[0];
-              let productId = mapProducttoId(name);
-
-              if (productId != null) {
+              let foodItems = snap.child('MyData').child('foodItem').val();
+              if (foodItems.includes(name)) {
+                let productId = foodItems.indexOf(name) + 1;
                 database
                   .ref(`chatbot`)
                   .child(phone)
@@ -403,59 +425,49 @@ exports.apicall = functions.https.onRequest((req, res) => {
                   });
 
                 res.send(
+                  'Please enter next item and quantity\nPress x to finish'
+                );
+              } else {
+                res.send(
+                  'We Dont Have That Product Please Check Again and Order another product! 1'
+                );
+              }
+            } else {
+              //! it is a number
+
+              let inputId = Number(name);
+              let foodItems = snap.child('MyData').child('foodItem').val();
+
+              if (inputId != 0 && inputId <= foodItems.length) {
+                let productName = foodItems[inputId - 1];
+                database
+                  .ref(`chatbot`)
+                  .child(phone)
+                  .child('History')
+                  .child(mainTimestamp)
+                  .child('Messages')
+                  .child(time)
+                  .set(inputdata);
+
+                database
+                  .ref('chatbot')
+                  .child(userData.sender.phone)
+                  .child('History')
+                  .child(mainTimestamp)
+                  .child('Product')
+                  .child(inputId)
+                  .set({
+                    item: productName,
+                    Quantity: productArr[1],
+                  });
+
+                res.send(
                   'please enter next item and quantity\npress x to finish'
                 );
               } else {
                 res.send(
                   'We Dont Have That Product Please Check Again and Order another product!'
                 );
-              }
-            } else {
-              //! it is a number
-
-              if (productArr.length >= 1) {
-                try {
-                  var currentProduct = getImageandDish(productArr[0]);
-                } catch (error) {
-                  res.send(
-                    'We Dont Have That Product Please Check Again and Order another product!'
-                  );
-                }
-
-                console.log('currentProduct = ', currentProduct);
-
-                if (currentProduct) {
-                  database
-                    .ref(`chatbot`)
-                    .child(phone)
-                    .child('History')
-                    .child(mainTimestamp)
-                    .child('Messages')
-                    .child(time)
-                    .set(inputdata);
-
-                  database
-                    .ref('chatbot')
-                    .child(userData.sender.phone)
-                    .child('History')
-                    .child(mainTimestamp)
-                    .child('Product')
-                    .child(productArr[0])
-                    .set({
-                      item: currentProduct[1],
-                      Quantity: productArr[1],
-                    });
-
-                  res.send(
-                    'please enter next item and quantity\npress x to finish'
-                  );
-                } else {
-                  res.send(
-                    'We Dont Have That Product Please Check Again and Order another product!'
-                  );
-                }
-              } else {
-                res.send('Please Enter Valid Input');
               }
             }
           } else {
@@ -475,10 +487,16 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child(mainTimestamp)
               .val();
             let arr = a.Product;
-            let keysarr = Object.keys(arr);
-            let pId = keysarr[0];
-            pId = Number(pId);
-            let productarr = getImageandDish(pId);
+            // let keysarr = Object.keys(arr);
+            // let pId = keysarr[0];
+            // pId = Number(pId);
+            // let productarr = getImageandDish(pId);
+            // !==============
+            let productList = a.Product;
+            let indexes = Object.keys(productList);
+
+            let changeThisProduct = productList[indexes[0]];
+            let productName = changeThisProduct.item;
 
             database
               .ref('chatbot')
@@ -486,21 +504,19 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('History')
               .child(mainTimestamp)
               .child('ProductIdForCut')
-              .set(pId);
-            res.send(`How would you like the cut for ${productarr[1]} ?`);
+              .set(indexes[0]);
+            // res.send(`How would you like the cut for ${productarr[1]} ?`);
+            res.send(`How would you like the cut for ${productName} ?`);
           }
-
-          // !---------------------------------------------------------
-
-          console.log(productArr[0]);
         }
 
         if (count == 4) {
           cutval = snap.child(phone).child('History').child(mainTimestamp).val()
             .ProductIdForCut;
-
           var a = snap.child(phone).child('History').child(mainTimestamp).val();
-          let arr = a.Product;
+          let arr = a.Product; //  ['chickn','finsh','bla']
+
+          let foodItems = snap.child('MyData').child('foodItem').val();
 
           if (cutval != 'done') {
             database
@@ -521,9 +537,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
                 keysarr[i] == cutval
               ) {
               } else {
-                var productarr = getImageandDish(keysarr[i]);
-                pName = productarr[1];
-
+                // var productarr = getImageandDish(keysarr[i]);
+                // pName = productarr[1];
+                let productName = foodItems[keysarr[i] - 1];
                 database
                   .ref('chatbot')
                   .child(phone)
@@ -531,7 +547,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
                   .child(mainTimestamp)
                   .child('ProductIdForCut')
                   .set(keysarr[i]);
-                res.send(`How would you like the cut for ${pName} ?`);
+                res.send(`How would you like the cut for ${productName} ?`);
                 break;
               }
             }
@@ -547,6 +563,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
           }
         }
         if (count == 5) {
+          let foodItems = snap.child('MyData').child('foodItem').val();
+
           // delte the Product idFOr CUt
           database
             .ref('chatbot')
@@ -596,9 +614,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
           let keys = Object.keys(productref);
           let AllProducts = [];
           for (let i = 0; i < keys.length; i++) {
-            let itemArr = getImageandDish(Number(keys[i]));
-
-            let pName = itemArr[1];
+            // let itemArr = getImageandDish(Number(keys[i]));
+            // let pName = itemArr[1];
+            let pName = foodItems[keys[i] - 1];
             AllProducts.push(
               `${pName},${productref[keys[i]].Quantity},${
                 productref[keys[i]].slices
