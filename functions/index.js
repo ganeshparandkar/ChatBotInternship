@@ -30,10 +30,8 @@ function arrtoobject(array) {
 
 client.authorize((err, tokens) => {
   if (err) {
-    // console.log(err);
     return; // just get out from the function
   } else {
-    // console.log('Connected');
     gsrun(client).then((data) => {
       sheetData = data[0];
       let areaData = arrtoobject(sheetData);
@@ -162,6 +160,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
         timestamp = date + '|' + time;
 
         if (count == 6) {
+          let foodItems = snap.child('MyData').child('foodItem').val();
+
           let productref = snap
             .child(phone)
             .child('History')
@@ -174,7 +174,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
           for (let i = 0; i < keys.length; i++) {
             let itemArr = getImageandDish(Number(keys[i]));
 
-            let pName = itemArr[1];
+            // let pName = itemArr[1];
+            let pName = foodItems[keys[i] - 1];
             AllProducts.push(
               `${pName},${productref[keys[i]].Quantity},${
                 productref[keys[i]].slices
@@ -211,6 +212,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
           );
         }
         if (count == 7) {
+          let foodItems = snap.child('MyData').child('foodItem').val();
+
           if (inputdata == 1) {
             let oldproduct = snap
               .child(phone)
@@ -255,9 +258,10 @@ exports.apicall = functions.https.onRequest((req, res) => {
             let keys = Object.keys(productref);
             let AllProducts = [];
             for (let i = 0; i < keys.length; i++) {
-              let itemArr = getImageandDish(Number(keys[i]));
+              // let itemArr = getImageandDish(Number(keys[i]));
 
-              let pName = itemArr[1];
+              // let pName = itemArr[1];
+              let pName = foodItems[keys[i]];
               AllProducts.push(
                 `${pName},${productref[keys[i]].Quantity},${
                   productref[keys[i]].slices
@@ -691,7 +695,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
         areaCode,
         'New',
       ];
-      // console.log(saveDataArray);
       second();
 
       function second() {
@@ -704,10 +707,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
 
         client.authorize((err, tokens) => {
           if (err) {
-            console.log(err);
             return;
           } else {
-            console.log('Connected');
             gsrun(client);
           }
         });
@@ -734,7 +735,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
           };
 
           let res = await gsapi.spreadsheets.values.update(update);
-          console.log('res', res);
         };
       }
     }
