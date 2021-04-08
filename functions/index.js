@@ -5,6 +5,8 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { google } = require('googleapis');
 const keys = require('./key.json');
+const axios = require('axios');
+
 /* -----
 Spreadsheet connectivity
 -------*/
@@ -128,27 +130,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
     },
     'Please enter ItemId and quantity',
   ];
-  // const menuCard = [
-  //   {
-  //     type: 'image',
-  //     originalUrl: 'https://i.ibb.co/Z6P26fW/Meatable-Menu.jpg',
-  //     previewUrl: 'https://i.ibb.co/Z6P26fW/Meatable-Menu.jpg',
-  //     caption: 'Menu Card',
-  //   },
-  //   'Please enter ItemId and quantity',
-  // ];
-  // const menuCard = [
-  //   {
-  //     type: 'image',
-  //     originalUrl:
-  //       'https://image.freepik.com/free-vector/vector-cartoon-illustration-design-fast-food-restaurant-menu_1441-334.jpg',
-  //     previewUrl:
-  //       'https://image.freepik.com/free-vector/vector-cartoon-illustration-design-fast-food-restaurant-menu_1441-334.jpg',
-  //     caption: 'Sample image',
-  //   },
-  //   'Please enter ItemId and quantity',
-  // ];
-
   if (req.method == 'POST') {
     if (inputdata.toLowerCase() == 'cls') {
       database.ref('chatbot').child(userData.sender.phone.toString()).remove();
@@ -157,15 +138,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
 
     database.ref('chatbot').once('value', (snap) => {
       phone = userData.sender.phone.toString();
-      // let mT = snap.child(phone).val().timestamp;
-      // let myCount = snap.child(phone).child('History').child(mT).val().count;
-
-      // if (resetMessages.includes(inputdata) && myCount != 6) {
-      //   database
-      //     .ref('chatbot')
-      //     .child(userData.sender.phone.toString())
-      //     .remove();
-      // }
 
       if (snap.hasChild(phone)) {
         let mainTimestamp = snap.child(phone).val().timestamp;
@@ -769,3 +741,35 @@ exports.apicall = functions.https.onRequest((req, res) => {
     }
   }
 });
+
+// exports.scheduledFunction = functions.pubsub
+//   .schedule('*/1 * * * *')
+//   .onRun((context) => {
+//     console.log('This will be run every 1 minutes!');
+//     return null;
+//   });
+
+// const msg = 'checkthis';
+
+// const sendMsg = () => {
+//   var config = {
+//     method: 'post',
+//     url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=917795662042&destination=918421793467&message=${msg}&src.name=Meatable`,
+//     headers: {
+//       'Cache-Control': 'no-cache',
+//       'Content-Type': 'application/x-www-form-urlencoded',
+//       apikey: 'xbfjxahyq0k6xe1gtvahda9rygomfhpo',
+//       'cache-control': 'no-cache',
+//     },
+//   };
+
+//   axios(config)
+//     .then(function (response) {
+//       console.log(JSON.stringify(response.data));
+//     })
+//     .catch(function (error) {
+//       console.log(error);
+//     });
+// };
+
+// sendMsg();
