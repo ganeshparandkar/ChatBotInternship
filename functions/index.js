@@ -118,27 +118,54 @@ exports.apicall = functions.https.onRequest((req, res) => {
   const data = req.body.payload.payload;
   const userData = req.body.payload;
   const inputdata = data.text;
-
+  // const resetMessages = ['hi', 'hii', 'hie', 'cls', 'Cls', 'Hi', 'Hii'];
   const menuCard = [
     {
       type: 'image',
-      originalUrl:
-        'https://image.freepik.com/free-vector/vector-cartoon-illustration-design-fast-food-restaurant-menu_1441-334.jpg',
-      previewUrl:
-        'https://image.freepik.com/free-vector/vector-cartoon-illustration-design-fast-food-restaurant-menu_1441-334.jpg',
-      caption: 'Sample image',
+      originalUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=21b6db5c-604b-4185-b51e-0463d970b9bf`,
+      previewUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=21b6db5c-604b-4185-b51e-0463d970b9bf`,
+      caption: 'Menu Card',
     },
     'Please enter ItemId and quantity',
   ];
+  // const menuCard = [
+  //   {
+  //     type: 'image',
+  //     originalUrl: 'https://i.ibb.co/Z6P26fW/Meatable-Menu.jpg',
+  //     previewUrl: 'https://i.ibb.co/Z6P26fW/Meatable-Menu.jpg',
+  //     caption: 'Menu Card',
+  //   },
+  //   'Please enter ItemId and quantity',
+  // ];
+  // const menuCard = [
+  //   {
+  //     type: 'image',
+  //     originalUrl:
+  //       'https://image.freepik.com/free-vector/vector-cartoon-illustration-design-fast-food-restaurant-menu_1441-334.jpg',
+  //     previewUrl:
+  //       'https://image.freepik.com/free-vector/vector-cartoon-illustration-design-fast-food-restaurant-menu_1441-334.jpg',
+  //     caption: 'Sample image',
+  //   },
+  //   'Please enter ItemId and quantity',
+  // ];
 
   if (req.method == 'POST') {
-    if (inputdata == 'cls') {
+    if (inputdata.toLowerCase() == 'cls') {
       database.ref('chatbot').child(userData.sender.phone.toString()).remove();
     }
     var date, time, timestamp, phone;
 
     database.ref('chatbot').once('value', (snap) => {
       phone = userData.sender.phone.toString();
+      // let mT = snap.child(phone).val().timestamp;
+      // let myCount = snap.child(phone).child('History').child(mT).val().count;
+
+      // if (resetMessages.includes(inputdata) && myCount != 6) {
+      //   database
+      //     .ref('chatbot')
+      //     .child(userData.sender.phone.toString())
+      //     .remove();
+      // }
 
       if (snap.hasChild(phone)) {
         let mainTimestamp = snap.child(phone).val().timestamp;
@@ -172,7 +199,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
           let keys = Object.keys(productref);
           let AllProducts = [];
           for (let i = 0; i < keys.length; i++) {
-            let itemArr = getImageandDish(Number(keys[i]));
+            // let itemArr = getImageandDish(Number(keys[i]));
 
             // let pName = itemArr[1];
             let pName = foodItems[keys[i] - 1];
@@ -344,7 +371,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
               },\n please choose an area.`
             );
           } else {
-            res.send('We dont provide out services to this address');
+            res.send(
+              'We dont provide out services to this address.\n please try different pin.'
+            );
           }
 
           // if (cityPoints != 'NotFound') {
