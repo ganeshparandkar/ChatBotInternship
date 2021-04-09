@@ -6,7 +6,6 @@ const admin = require('firebase-admin');
 const { google } = require('googleapis');
 const keys = require('./key.json');
 const axios = require('axios');
-
 /* -----
 Spreadsheet connectivity
 -------*/
@@ -29,6 +28,12 @@ function arrtoobject(array) {
     return result;
   }, {});
 }
+function pincodeToAdminNo(array) {
+  return array.reduce(function (result, currentArray) {
+    result[currentArray[0]] = currentArray[2];
+    return result;
+  }, {});
+}
 
 client.authorize((err, tokens) => {
   if (err) {
@@ -36,11 +41,10 @@ client.authorize((err, tokens) => {
   } else {
     gsrun(client).then((data) => {
       sheetData = data[0];
+      let mapAdminPhone = pincodeToAdminNo(sheetData);
       let areaData = arrtoobject(sheetData);
-
       sheetProducts = data[1];
       let productDetails = arrtoobject(sheetProducts);
-
       let temp = sheetProducts.map((e) => e[1].toUpperCase());
       foodItems = temp;
       database.ref('chatbot').child('MyData').child('foodItem').set(temp);
@@ -50,6 +54,11 @@ client.authorize((err, tokens) => {
         .child('SheetProduct')
         .set(productDetails);
       database.ref('chatbot').child('MyData').child('SheetArea').set(areaData);
+      database
+        .ref('chatbot')
+        .child('MyData')
+        .child('PincodeWithAdminNo')
+        .set(mapAdminPhone);
     });
   }
 });
@@ -66,7 +75,7 @@ var gsrun = async (cl) => {
 
   const Areasheet = {
     spreadsheetId: '1PorRlxlCbXveAtXBicBGfn6UFGVt9VZ5hqDtyBzOW9Q', // Pincodes Area address
-    range: 'Sheet1!A1:B100',
+    range: 'Sheet1!A1:C100',
   };
 
   const productSheet = {
@@ -86,6 +95,74 @@ var gsrun = async (cl) => {
 };
 
 exports.apicall = functions.https.onRequest((req, res) => {
+  // res.status(200).send('hii');
+
+  const getAdminPhone = (pincode_AdminNumbers, currentPin) => {
+    if (Object.keys(pincode_AdminNumbers).includes(currentPin)) {
+      console.log(currentPin);
+      let index = Object.keys(pincode_AdminNumbers).indexOf(inputdata) + 1;
+      console.log(index);
+      console.log(Object.values(pincode_AdminNumbers));
+      adminNo = Object.values(pincode_AdminNumbers)[index];
+      console.log(Object.values(pincode_AdminNumbers)[index]);
+      //! here we got the number of admin according to perticular pincode! now send the msg of orders to the admin;
+      console.log('adminNo ===', adminNo);
+      return adminNo;
+    } else {
+      console.log('There is no admin No.');
+      return null;
+    }
+  };
+  /* --------
+  ! to get all product in one row
+  --------------*/
+  const getAllOrderedItems = (productRef, FoodItems) => {
+    let keys = Object.keys(productRef);
+    let AllProducts = [];
+    for (let i = 0; i < keys.length; i++) {
+      let pName = FoodItems[keys[i] - 1];
+      AllProducts.push(
+        `${pName},${productRef[keys[i]].Quantity},${productRef[keys[i]].slices}`
+      );
+    }
+    let singleLineProducts = AllProducts.join(`  |  `);
+    return singleLineProducts;
+  };
+  // ----------------------------------------------------------------------------------
+  const sendMsgFromBot = (number, msg) => {
+    //! change {source,botName,apiKey } according to bot
+    const checkNo = (phoneNumber) => {
+      if (phoneNumber.toString().slice(0, 2) == 91) {
+        return phoneNumber;
+      } else {
+        return `91${phoneNumber}`;
+      }
+    };
+    let newNumber = checkNo(number);
+    console.log('infunc No', newNumber);
+    var source = '917834811114';
+    let botName = 'TestShriyashApi';
+    let destination = newNumber;
+    let apiKey = 'ng9x1glfai42vpvv7rrpvtefe2l8jleg';
+    var config = {
+      method: 'post',
+      url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=${source}&destination=${destination}&message=${msg}&src.name=${botName}`,
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        apikey: apiKey,
+        'cache-control': 'no-cache',
+      },
+    };
+    axios(config)
+      .then(function (response) {
+        console.log(JSON.stringify(response.data));
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+  };
+
   function checkPin(inputpin) {
     let pincodeslocal = [];
     sheetData.map((e) => {
@@ -101,26 +178,25 @@ exports.apicall = functions.https.onRequest((req, res) => {
     }
   }
 
-  function getImageandDish(id) {
-    id = id.toString();
-    let dish, url, arr;
+  // function getImageandDish(id) {
+  //   id = id.toString();
+  //   let dish, url, arr;
 
-    for (let i = 0; i <= sheetProducts.length; i++) {
-      if (sheetProducts[i][0] == id) {
-        dish = sheetProducts[i][1];
+  //   for (let i = 0; i <= sheetProducts.length; i++) {
+  //     if (sheetProducts[i][0] == id) {
+  //       dish = sheetProducts[i][1];
 
-        url = sheetProducts[i][2];
-        arr = [id, dish, url];
-        return arr;
-      }
-    }
-    return null;
-  }
+  //       url = sheetProducts[i][2];
+  //       arr = [id, dish, url];
+  //       return arr;
+  //     }
+  //   }
+  //   return null;
+  // }
 
   const data = req.body.payload.payload;
   const userData = req.body.payload;
   const inputdata = data.text;
-  // const resetMessages = ['hi', 'hii', 'hie', 'cls', 'Cls', 'Hi', 'Hii'];
   const menuCard = [
     {
       type: 'image',
@@ -168,27 +244,15 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('Product')
             .val();
 
-          let keys = Object.keys(productref);
-          let AllProducts = [];
-          for (let i = 0; i < keys.length; i++) {
-            // let itemArr = getImageandDish(Number(keys[i]));
+          let allProductList = getAllOrderedItems(productref, foodItems);
 
-            // let pName = itemArr[1];
-            let pName = foodItems[keys[i] - 1];
-            AllProducts.push(
-              `${pName},${productref[keys[i]].Quantity},${
-                productref[keys[i]].slices
-              }`
-            );
-          }
-          let singleLineProducts = AllProducts.join(`  |  `);
           database
             .ref(`chatbot`)
             .child(phone)
             .child('History')
             .child(mainTimestamp)
             .child('ProductDetails')
-            .set(singleLineProducts);
+            .set(allProductList);
 
           database
             .ref(`chatbot`)
@@ -206,7 +270,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('count')
             .set(7);
           res.send(
-            `Your last order was\n\n${singleLineProducts}\n\nPress 1 for re-order.
+            `Your last order was\n\n${allProductList}\n\nPress 1 for re-order.
             \nPress 2 for new order.`
           );
         }
@@ -243,6 +307,10 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('Product')
               .set(oldproduct);
             //!---------------------
+            let pincode_AdminNumbers = snap
+              .child('MyData')
+              .child('PincodeWithAdminNo')
+              .val();
             let name = snap.child(phone).val().name;
             let address = snap.child(phone).val().Address;
             let pincode = snap.child(phone).val().pincode;
@@ -254,20 +322,16 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('Product')
               .val();
 
-            let keys = Object.keys(productref);
-            let AllProducts = [];
-            for (let i = 0; i < keys.length; i++) {
-              // let itemArr = getImageandDish(Number(keys[i]));
+            let adminNo = getAdminPhone(pincode_AdminNumbers, pincode);
 
-              // let pName = itemArr[1];
-              let pName = foodItems[keys[i]];
-              AllProducts.push(
-                `${pName},${productref[keys[i]].Quantity},${
-                  productref[keys[i]].slices
-                }`
-              );
-            }
-            let product = AllProducts.join(`  |  `);
+            let product = getAllOrderedItems(productref, foodItems);
+            let tempArray = product.split('  |  ');
+            let finalOrderDetails = tempArray.join('\n');
+
+            let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
+
+            sendMsgFromBot(adminNo, message);
+
             //!---------------------
             saveData(
               mainTimestamp,
@@ -347,34 +411,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
               'We dont provide out services to this address.\n please try different pin.'
             );
           }
-
-          // if (cityPoints != 'NotFound') {
-          // database
-          //   .ref('chatbot')
-          //   .child(userData.sender.phone)
-          //   .child('pincode')
-          //   .set(inputdata);
-          // database
-          //   .ref('chatbot')
-          //   .child(phone)
-          //   .child('History')
-          //   .child(mainTimestamp)
-          //   .child('count')
-          //   .set(2);
-          // database
-          //   .ref(`chatbot`)
-          //   .child(phone)
-          //   .child('History')
-          //   .child(mainTimestamp)
-          //   .child('Messages')
-          //   .child(time)
-          //   .set(inputdata);
-          // res.send(
-          //   `We serve the following areas,\n ${cityPoints.toString()},\n please choose an area.`
-          // );
-          // } else {
-          // res.send('We dont provide out services to this address');
-          // }
         }
         if (count == 2) {
           database
@@ -476,7 +512,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
               }
             }
           } else {
-            //here you will terminate the loop Input is X
+            //!here you will terminate the loop Input is X
 
             database
               .ref('chatbot')
@@ -491,7 +527,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('History')
               .child(mainTimestamp)
               .val();
-            let arr = a.Product;
+            // let arr = a.Product;
             // let keysarr = Object.keys(arr);
             // let pId = keysarr[0];
             // pId = Number(pId);
@@ -510,7 +546,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child(mainTimestamp)
               .child('ProductIdForCut')
               .set(indexes[0]);
-            // res.send(`How would you like the cut for ${productarr[1]} ?`);
             res.send(`How would you like the cut for ${productName} ?`);
           }
         }
@@ -569,6 +604,41 @@ exports.apicall = functions.https.onRequest((req, res) => {
         }
         if (count == 5) {
           let foodItems = snap.child('MyData').child('foodItem').val();
+          //!---------------------
+          let address = inputdata;
+          let pincode = snap.child(phone).val().pincode;
+          let areaCode = snap.child(phone).val().areaCode;
+          let name = snap.child(phone).val().name;
+
+          //!---------------------
+          //! get current pincode of that user from databasse
+          let currentPin = snap
+            .child(userData.sender.phone)
+            .child('pincode')
+            .val();
+
+          //! get current data of phoneNo of admin user from databasse
+          let pincode_AdminNumbers = snap
+            .child('MyData')
+            .child('PincodeWithAdminNo')
+            .val();
+
+          let productref = snap
+            .child(phone)
+            .child('History')
+            .child(mainTimestamp)
+            .child('Product')
+            .val();
+
+          let adminNo = getAdminPhone(pincode_AdminNumbers, currentPin);
+
+          let product = getAllOrderedItems(productref, foodItems);
+          let tempArray = product.split('  |  ');
+          let finalOrderDetails = tempArray.join('\n');
+
+          let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
+
+          sendMsgFromBot(adminNo, message);
 
           // delte the Product idFOr CUt
           database
@@ -604,32 +674,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child(mainTimestamp)
             .child('count')
             .set(6);
-          //!---------------------
-          let name = snap.child(phone).val().name;
-          let address = inputdata;
-          let pincode = snap.child(phone).val().pincode;
-          let areaCode = snap.child(phone).val().areaCode;
-          let productref = snap
-            .child(phone)
-            .child('History')
-            .child(mainTimestamp)
-            .child('Product')
-            .val();
 
-          let keys = Object.keys(productref);
-          let AllProducts = [];
-          for (let i = 0; i < keys.length; i++) {
-            // let itemArr = getImageandDish(Number(keys[i]));
-            // let pName = itemArr[1];
-            let pName = foodItems[keys[i] - 1];
-            AllProducts.push(
-              `${pName},${productref[keys[i]].Quantity},${
-                productref[keys[i]].slices
-              }`
-            );
-          }
-          let product = AllProducts.join(`  |  `);
-          //!---------------------
           saveData(
             mainTimestamp,
             phone,
@@ -741,13 +786,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
     }
   }
 });
-
-// exports.scheduledFunction = functions.pubsub
-//   .schedule('*/1 * * * *')
-//   .onRun((context) => {
-//     console.log('This will be run every 1 minutes!');
-//     return null;
-//   });
+//! :😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃
 
 // const msg = 'checkthis';
 
@@ -772,4 +811,11 @@ exports.apicall = functions.https.onRequest((req, res) => {
 //     });
 // };
 
-// sendMsg();
+// exports.scheduledFunction = functions.pubsub
+//   .schedule('*/1 * * * *')
+//   .onRun((context) => {
+//     console.log('This will be run every 1 minutes!', context);
+//     sendMsg();
+
+//     return null;
+//   });
