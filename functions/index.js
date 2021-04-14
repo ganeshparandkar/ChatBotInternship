@@ -95,8 +95,6 @@ var gsrun = async (cl) => {
 };
 
 exports.apicall = functions.https.onRequest((req, res) => {
-  // res.status(200).send('hii');
-
   const getAdminPhone = (pincode_AdminNumbers, currentPin) => {
     if (Object.keys(pincode_AdminNumbers).includes(currentPin)) {
       console.log(currentPin);
@@ -140,10 +138,21 @@ exports.apicall = functions.https.onRequest((req, res) => {
     };
     let newNumber = checkNo(number);
     console.log('infunc No', newNumber);
-    var source = '917834811114';
-    let botName = 'TestShriyashApi';
     let destination = newNumber;
-    let apiKey = 'ng9x1glfai42vpvv7rrpvtefe2l8jleg';
+
+    // ! trialBot
+    // ?---------------------------------------------------------------
+    // var source = '917834811114';
+    // let botName = 'TestShriyashApi';
+    // let apiKey = 'ng9x1glfai42vpvv7rrpvtefe2l8jleg';
+    // ?---------------------------------------------------------------
+    // ! ProductionBot
+    // ?---------------------------------------------------------------
+    var source = '917795662042';
+    let botName = 'Meatable';
+    let apiKey = 'xbfjxahyq0k6xe1gtvahda9rygomfhpo';
+    // ?---------------------------------------------------------------
+
     var config = {
       method: 'post',
       url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=${source}&destination=${destination}&message=${msg}&src.name=${botName}`,
@@ -163,59 +172,33 @@ exports.apicall = functions.https.onRequest((req, res) => {
       });
   };
 
-  function checkPin(inputpin) {
-    let pincodeslocal = [];
-    sheetData.map((e) => {
-      pincodeslocal.push(e[0]);
-    });
-    if (pincodeslocal.includes(inputpin.toString())) {
-      let placesAtPincode = '';
-      let index = pincodeslocal.indexOf(inputpin.toString());
-      placesAtPincode = sheetData[[index]][1];
-      return placesAtPincode;
-    } else {
-      return 'NotFound';
-    }
-  }
-
-  // function getImageandDish(id) {
-  //   id = id.toString();
-  //   let dish, url, arr;
-
-  //   for (let i = 0; i <= sheetProducts.length; i++) {
-  //     if (sheetProducts[i][0] == id) {
-  //       dish = sheetProducts[i][1];
-
-  //       url = sheetProducts[i][2];
-  //       arr = [id, dish, url];
-  //       return arr;
-  //     }
-  //   }
-  //   return null;
-  // }
-
   const data = req.body.payload.payload;
   const userData = req.body.payload;
   const inputdata = data.text;
   const menuCard = [
     {
       type: 'image',
-      originalUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=21b6db5c-604b-4185-b51e-0463d970b9bf`,
-      previewUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=21b6db5c-604b-4185-b51e-0463d970b9bf`,
+      originalUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=e2032a43-1f35-44aa-a85d-0f1e0c6ccb35`,
+      previewUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=e2032a43-1f35-44aa-a85d-0f1e0c6ccb35`,
       caption: 'Menu Card',
     },
-    'Please enter ItemId and quantity',
   ];
+// !====================================================================================================
+// !====================================================================================================
+// !====================================================================================================
   if (req.method == 'POST') {
-    if (inputdata.toLowerCase() == 'cls') {
-      database.ref('chatbot').child(userData.sender.phone.toString()).remove();
-    }
     var date, time, timestamp, phone;
 
     database.ref('chatbot').once('value', (snap) => {
       phone = userData.sender.phone.toString();
 
       if (snap.hasChild(phone)) {
+        if (inputdata.toLowerCase() == 'cls') {
+          database
+            .ref('chatbot')
+            .child(userData.sender.phone.toString())
+            .remove();
+        }
         let mainTimestamp = snap.child(phone).val().timestamp;
         let count = snap
           .child(phone)
@@ -367,13 +350,15 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('count')
               .set(3);
             res.send(menuCard);
+            let msg = `Please enter ItemId and quantity`;
+            sendMsgFromBot(phone, msg);
           } else {
             res.send('please enter valid Input!');
           }
         }
 
         if (count == 1) {
-          var cityPoints = checkPin(inputdata);
+          // var cityPoints = checkPin(inputdata);
 
           let areaAndPincodeSheet = snap
             .child('MyData')
@@ -404,7 +389,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             res.send(
               `We serve the following areas,\n ${
                 Object.values(areaAndPincodeSheet)[index]
-              },\n please choose an area.`
+              }\nPlease choose an area.`
             );
           } else {
             res.send(
@@ -434,6 +419,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('areaCode')
             .set(inputdata);
           res.send(menuCard);
+          let msg = 'Please enter ItemId and quantity';
+          sendMsgFromBot(phone, msg);
         }
         if (count == 3) {
           var productArr = inputdata.split(' ');
@@ -591,8 +578,100 @@ exports.apicall = functions.https.onRequest((req, res) => {
                 break;
               }
             }
+            // ?😅😅😅😅 check if address is available or not?
+            let isAddressAvailable = snap.child(phone).hasChild('Address');
+            if (isAddressAvailable) {
+              // ? if available then ask if he want to change that address or not!
+              let myAddress = snap.child(phone).child('Address').val();
+              res.send(
+                `is this your address ?\n${myAddress}\n\npress 1 -> yes \npress 2 -> no`
+              );
+              database
+                .ref('chatbot')
+                .child(phone)
+                .child('History')
+                .child(mainTimestamp)
+                .child('count')
+                .set(20);
+            } else {
+              // ! when address is not available (new user)
+              database
+                .ref('chatbot')
+                .child(phone)
+                .child('History')
+                .child(mainTimestamp)
+                .child('count')
+                .set(5);
+              res.send('Please enter your address');
+            }
+          }
+        }
 
-            res.send('Please enter your address');
+        if (count == 20) {
+          if (inputdata == 1) {
+            let address = snap.child(phone).val().Address;
+            database
+              .ref(`chatbot`)
+              .child(phone)
+              .child('History')
+              .child(mainTimestamp)
+              .child('Messages')
+              .child(time)
+              .set(inputdata);
+            database
+              .ref('chatbot')
+              .child(phone)
+              .child('History')
+              .child(mainTimestamp)
+              .child('count')
+              .set(6);
+            // *asd
+            let foodItems = snap.child('MyData').child('foodItem').val();
+            let pincode_AdminNumbers = snap
+              .child('MyData')
+              .child('PincodeWithAdminNo')
+              .val();
+            let productref = snap
+              .child(phone)
+              .child('History')
+              .child(mainTimestamp)
+              .child('Product')
+              .val();
+            let currentPin = snap.child(phone).child('pincode').val();
+
+            let adminNo = getAdminPhone(pincode_AdminNumbers, currentPin);
+            let product = getAllOrderedItems(productref, foodItems);
+            let tempArray = product.split('  |  ');
+            let finalOrderDetails = tempArray.join('\n');
+            let name = snap.child(phone).val().name;
+            let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
+            sendMsgFromBot(adminNo, message);
+            // *asd
+
+            res.send(
+              'Thanks for ordering with us. We will soon update you with the status.'
+            );
+
+            let pincode = currentPin;
+            let areaCode = snap.child(phone).val().areaCode;
+            saveData(
+              mainTimestamp,
+              phone,
+              name,
+              product,
+              address,
+              pincode,
+              areaCode
+            );
+          } else if (inputdata == 2) {
+            database
+              .ref(`chatbot`)
+              .child(phone)
+              .child('History')
+              .child(mainTimestamp)
+              .child('Messages')
+              .child(time)
+              .set(inputdata);
             database
               .ref('chatbot')
               .child(phone)
@@ -600,12 +679,35 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child(mainTimestamp)
               .child('count')
               .set(5);
+            res.send('Please enter your address');
+          } else {
+            database
+              .ref(`chatbot`)
+              .child(phone)
+              .child('History')
+              .child(mainTimestamp)
+              .child('Messages')
+              .child(time)
+              .set(inputdata);
+            res.send('please enter valid Input!');
           }
         }
+
         if (count == 5) {
           let foodItems = snap.child('MyData').child('foodItem').val();
           //!---------------------
-          let address = inputdata;
+          let address;
+
+          if (inputdata == 1) {
+            address = snap.child(phone).child('Address').val();
+          } else {
+            address = inputdata;
+            database
+              .ref('chatbot')
+              .child(userData.sender.phone)
+              .child('Address')
+              .set(inputdata);
+          }
           let pincode = snap.child(phone).val().pincode;
           let areaCode = snap.child(phone).val().areaCode;
           let name = snap.child(phone).val().name;
@@ -659,12 +761,6 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child(mainTimestamp)
             .child('Messages')
             .child(time)
-            .set(inputdata);
-
-          database
-            .ref('chatbot')
-            .child(userData.sender.phone)
-            .child('Address')
             .set(inputdata);
 
           database
@@ -788,34 +884,117 @@ exports.apicall = functions.https.onRequest((req, res) => {
 });
 //! :😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃
 
-// const msg = 'checkthis';
-
-// const sendMsg = () => {
-//   var config = {
-//     method: 'post',
-//     url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=917795662042&destination=918421793467&message=${msg}&src.name=Meatable`,
-//     headers: {
-//       'Cache-Control': 'no-cache',
-//       'Content-Type': 'application/x-www-form-urlencoded',
-//       apikey: 'xbfjxahyq0k6xe1gtvahda9rygomfhpo',
-//       'cache-control': 'no-cache',
-//     },
-//   };
-
-//   axios(config)
-//     .then(function (response) {
-//       console.log(JSON.stringify(response.data));
-//     })
-//     .catch(function (error) {
-//       console.log(error);
-//     });
-// };
-
 // exports.scheduledFunction = functions.pubsub
-//   .schedule('*/1 * * * *')
+//   .schedule('*/10 * * * *')
 //   .onRun((context) => {
-//     console.log('This will be run every 1 minutes!', context);
-//     sendMsg();
+//     console.log('This will be run every 15 minutes!', context);
+
+//     const sendMsgFromBot = (number, msg) => {
+//       //! change {source,botName,apiKey } according to bot
+//       const checkNo = (phoneNumber) => {
+//         if (phoneNumber.toString().slice(0, 2) == 91) {
+//           return phoneNumber;
+//         } else {
+//           return `91${phoneNumber}`;
+//         }
+//       };
+//       let newNumber = checkNo(number);
+//       console.log('infunc No', newNumber);
+//       let destination = newNumber;
+
+//       // ! ProductionBot
+//       // ?---------------------------------------------------------------
+//       var source = '917795662042';
+//       let botName = 'Meatable';
+//       let apiKey = 'xbfjxahyq0k6xe1gtvahda9rygomfhpo';
+//       // ?---------------------------------------------------------------
+
+//       var config = {
+//         method: 'post',
+//         url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=${source}&destination=${destination}&message=${msg}&src.name=${botName}`,
+//         headers: {
+//           'Cache-Control': 'no-cache',
+//           'Content-Type': 'application/x-www-form-urlencoded',
+//           apikey: apiKey,
+//           'cache-control': 'no-cache',
+//         },
+//       };
+//       axios(config)
+//         .then(function (response) {
+//           console.log(JSON.stringify(response.data));
+//         })
+//         .catch(function (error) {
+//           console.log(error);
+//         });
+//     };
+
+//     const client = new google.auth.JWT(
+//       keys.client_email,
+//       null,
+//       keys.private_key,
+//       ['https://www.googleapis.com/auth/spreadsheets']
+//     );
+
+//     client.authorize((err, tokens) => {
+//       if (err) {
+//         return;
+//       } else {
+//         myFunc(client);
+//       }
+//     });
+
+//     const myFunc = async (cl) => {
+//       const gsapi = google.sheets({
+//         version: 'v4',
+//         auth: cl,
+//       });
+
+//       //? your excel sheet Details
+//       let ordersheet = {
+//         spreadsheetId: '1E8ZYti2gunPZkybHtlBElEW4rFITwmXRz3Pbn3dLbEo', // pincode and address sheet
+//         range: 'Sheet1!A1:I1000',
+//       };
+
+//       let allorders = await gsapi.spreadsheets.values.get(ordersheet);
+//       ordersheet = allorders.data.values;
+
+//       // ? perform all operations you want here only!
+//       ordersheet.map((row) => {
+//         if ((row[7] == 'processing' || row[7] == 'Processing') && row[8]) {
+//           /*  ---------
+//       ? Variables
+//     ----------*/
+//           let name, phone, product, amount;
+//           name = row[2];
+//           phone = row[1];
+//           product = row[3];
+//           amount = row[8];
+//           let msg = `Your order is now being processed.\n Your total cost will be Rs.${amount}`;
+//           // =-----------------------
+
+//           console.log(
+//             `\nname: ${name}\nphone: ${phone}\nproduct: ${product}\n`
+//           );
+
+//           sendMsgFromBot(phone, msg);
+//           return (row[7] = 'processed');
+//         } else {
+//           return row;
+//         }
+//       });
+//       // =------------------------------------------------------------------------------------------
+
+//       const update = {
+//         spreadsheetId: '1E8ZYti2gunPZkybHtlBElEW4rFITwmXRz3Pbn3dLbEo',
+//         range: 'Sheet1!A1:I1000',
+//         valueInputOption: 'USER_ENTERED',
+//         resource: { values: ordersheet },
+//       };
+
+//       let res = await gsapi.spreadsheets.values.update(update);
+//       console.log(res);
+//       return ordersheet;
+//     };
 
 //     return null;
 //   });
