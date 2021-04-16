@@ -18,81 +18,81 @@ admin.initializeApp({
 });
 let database = admin.database();
 
-const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
-  'https://www.googleapis.com/auth/spreadsheets',
-]);
+// const client = new google.auth.JWT(keys.client_email, null, keys.private_key, [
+//   'https://www.googleapis.com/auth/spreadsheets',
+// ]);
 
-function arrtoobject(array) {
-  return array.reduce(function (result, currentArray) {
-    result[currentArray[0]] = currentArray[1];
-    return result;
-  }, {});
-}
-function pincodeToAdminNo(array) {
-  return array.reduce(function (result, currentArray) {
-    result[currentArray[0]] = currentArray[2];
-    return result;
-  }, {});
-}
+// function arrtoobject(array) {
+//   return array.reduce(function (result, currentArray) {
+//     result[currentArray[0]] = currentArray[1];
+//     return result;
+//   }, {});
+// }
+// function pincodeToAdminNo(array) {
+//   return array.reduce(function (result, currentArray) {
+//     result[currentArray[0]] = currentArray[2];
+//     return result;
+//   }, {});
+// }
 
-client.authorize((err, tokens) => {
-  if (err) {
-    return; // just get out from the function
-  } else {
-    gsrun(client).then((data) => {
-      sheetData = data[0];
-      let mapAdminPhone = pincodeToAdminNo(sheetData);
-      let areaData = arrtoobject(sheetData);
-      sheetProducts = data[1];
-      let productDetails = arrtoobject(sheetProducts);
-      let temp = sheetProducts.map((e) => e[1].toUpperCase());
-      foodItems = temp;
-      database.ref('chatbot').child('MyData').child('foodItem').set(temp);
-      database
-        .ref('chatbot')
-        .child('MyData')
-        .child('SheetProduct')
-        .set(productDetails);
-      database.ref('chatbot').child('MyData').child('SheetArea').set(areaData);
-      database
-        .ref('chatbot')
-        .child('MyData')
-        .child('PincodeWithAdminNo')
-        .set(mapAdminPhone);
-    });
-  }
-});
+// client.authorize((err, tokens) => {
+//   if (err) {
+//     return;
+//   } else {
+//     gsrun(client).then((data) => {
+//       sheetData = data[0];
+//       let mapAdminPhone = pincodeToAdminNo(sheetData);
+//       let areaData = arrtoobject(sheetData);
+//       sheetProducts = data[1];
+//       let productDetails = arrtoobject(sheetProducts);
+//       let temp = sheetProducts.map((e) => e[1].toUpperCase());
+//       foodItems = temp;
+//       database.ref('chatbot').child('MyData').child('foodItem').set(temp);
+//       database
+//         .ref('chatbot')
+//         .child('MyData')
+//         .child('SheetProduct')
+//         .set(productDetails);
+//       database.ref('chatbot').child('MyData').child('SheetArea').set(areaData);
+//       database
+//         .ref('chatbot')
+//         .child('MyData')
+//         .child('PincodeWithAdminNo')
+//         .set(mapAdminPhone);
+//     });
+//   }
+// });
 
 /* -----
 database connectivity
 -------*/
 
-var gsrun = async (cl) => {
-  const gsapi = google.sheets({
-    version: 'v4',
-    auth: cl,
-  });
+// var gsrun = async (cl) => {
+//   const gsapi = google.sheets({
+//     version: 'v4',
+//     auth: cl,
+//   });
 
-  const Areasheet = {
-    spreadsheetId: '1PorRlxlCbXveAtXBicBGfn6UFGVt9VZ5hqDtyBzOW9Q', // Pincodes Area address
-    range: 'Sheet1!A1:C100',
-  };
+//   const Areasheet = {
+//     spreadsheetId: '1PorRlxlCbXveAtXBicBGfn6UFGVt9VZ5hqDtyBzOW9Q', // Pincodes Area address
+//     range: 'Sheet1!A1:C100',
+//   };
 
-  const productSheet = {
-    spreadsheetId: '1kK2_2s3kwhAzK2LrwFfOFXZWl45WD-wr0fSgOpqrgDw', // food menus
-    range: 'Sheet1!A1:C100',
-  };
+//   const productSheet = {
+//     spreadsheetId: '1kK2_2s3kwhAzK2LrwFfOFXZWl45WD-wr0fSgOpqrgDw', // food menus
+//     range: 'Sheet1!A1:C100',
+//   };
 
-  let data = await gsapi.spreadsheets.values.get(Areasheet);
-  let areaSheet = data.data.values;
+//   let data = await gsapi.spreadsheets.values.get(Areasheet);
+//   let areaSheet = data.data.values;
 
-  let products = await gsapi.spreadsheets.values.get(productSheet);
-  let productArr = products.data.values;
+//   let products = await gsapi.spreadsheets.values.get(productSheet);
+//   let productArr = products.data.values;
 
-  let sheets = [areaSheet, productArr];
+//   let sheets = [areaSheet, productArr];
 
-  return sheets;
-};
+//   return sheets;
+// };
 
 exports.apicall = functions.https.onRequest((req, res) => {
   const getAdminPhone = (pincode_AdminNumbers, currentPin) => {
@@ -140,18 +140,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
     console.log('infunc No', newNumber);
     let destination = newNumber;
 
-    // ! trialBot
-    // ?---------------------------------------------------------------
-    // var source = '917834811114';
-    // let botName = 'TestShriyashApi';
-    // let apiKey = 'ng9x1glfai42vpvv7rrpvtefe2l8jleg';
-    // ?---------------------------------------------------------------
-    // ! ProductionBot
-    // ?---------------------------------------------------------------
     var source = '917795662042';
     let botName = 'Meatable';
     let apiKey = 'xbfjxahyq0k6xe1gtvahda9rygomfhpo';
-    // ?---------------------------------------------------------------
 
     var config = {
       method: 'post',
@@ -172,20 +163,56 @@ exports.apicall = functions.https.onRequest((req, res) => {
       });
   };
 
+  // !this function will return time difference
+  function timeDiff(start, end) {
+    start = start.split(':');
+    end = end.split(':');
+    var startDate = new Date(0, 0, 0, start[0], start[1], 0);
+    var endDate = new Date(0, 0, 0, end[0], end[1], 0);
+    var diff = endDate.getTime() - startDate.getTime();
+    var hours = Math.floor(diff / 1000 / 60 / 60);
+    diff -= hours * 1000 * 60 * 60;
+    var minutes = Math.floor(diff / 1000 / 60);
+
+    // If using time pickers with 24 hours format, add the below line get exact hours
+    if (hours < 0) hours = hours + 24;
+
+    return (
+      (hours <= 9 ? '0' : '') +
+      hours +
+      ':' +
+      (minutes <= 9 ? '0' : '') +
+      minutes
+    );
+  }
+  // !======================================================================================
+  function titleCase(str) {
+    var splitStr = str.toLowerCase().split(' ');
+    for (var i = 0; i < splitStr.length; i++) {
+      // You do not need to check if i is larger than splitStr length, as your for does that for you
+      // Assign it back to the array
+      splitStr[i] =
+        splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);
+    }
+    // Directly return the joined string
+    return splitStr.join(' ');
+  }
+  // !====================================================================================================
+  // ? Declarations
   const data = req.body.payload.payload;
   const userData = req.body.payload;
   const inputdata = data.text;
   const menuCard = [
     {
       type: 'image',
-      originalUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=e2032a43-1f35-44aa-a85d-0f1e0c6ccb35`,
-      previewUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/Meatable%20Menu.jpg?alt=media&token=e2032a43-1f35-44aa-a85d-0f1e0c6ccb35`,
+      originalUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/menucard.jpg?alt=media&token=5ff0b7bf-07ba-47a7-9c0e-8ef132eefd16`,
+      previewUrl: `https://firebasestorage.googleapis.com/v0/b/ct-chat-bot-2021.appspot.com/o/menucard.jpg?alt=media&token=5ff0b7bf-07ba-47a7-9c0e-8ef132eefd16`,
       caption: 'Menu Card',
     },
   ];
-// !====================================================================================================
-// !====================================================================================================
-// !====================================================================================================
+  // !====================================================================================================
+  // !====================================================================================================
+  // !====================================================================================================
   if (req.method == 'POST') {
     var date, time, timestamp, phone;
 
@@ -193,19 +220,14 @@ exports.apicall = functions.https.onRequest((req, res) => {
       phone = userData.sender.phone.toString();
 
       if (snap.hasChild(phone)) {
-        if (inputdata.toLowerCase() == 'cls') {
-          database
-            .ref('chatbot')
-            .child(userData.sender.phone.toString())
-            .remove();
-        }
         let mainTimestamp = snap.child(phone).val().timestamp;
+
+        let dbTime = mainTimestamp.split('|')[1];
         let count = snap
           .child(phone)
           .child('History')
           .child(mainTimestamp)
           .val().count;
-
         var todayDateTime = new Date().toLocaleString('en-US', {
           timeZone: 'Asia/Kolkata',
         });
@@ -216,6 +238,49 @@ exports.apicall = functions.https.onRequest((req, res) => {
         date = `${date[0]},${date[1]},${date[2]}`;
         date = date.slice(0, -1);
         timestamp = date + '|' + time;
+        console.log(`current time : ${time}\nlasttimestamp time: ${dbTime}`);
+        let checkMins = timeDiff(dbTime, time);
+        console.log('timeDiff', checkMins);
+        let finalHr = Number(checkMins.split(':')[0]);
+        let min = Number(checkMins.split(':')[1]);
+        console.log(finalHr, min);
+        console.log(count);
+        let finalMin = finalHr * 60 + min;
+        console.log(finalMin);
+        if (finalMin > 15 && count != 6) {
+          console.log('reset it boy');
+          database
+            .ref(`chatbot`)
+            .child(phone)
+            .child('History')
+            .child(timestamp)
+            .child('count')
+            .set(1);
+
+          database
+            .ref(`chatbot`)
+            .child(phone)
+            .child('timestamp')
+            .set(timestamp);
+          // res.send(
+          //   `Hello ${userData.sender.name},\nPlease provide the PIN Code.`
+          // );
+          res.send(
+            `Hello ${userData.sender.name},\nWelcome to Meatable ! \nDelivering Seafood, Mutton and Chicken Conveniently Fresh: directly from source to gated communities!
+            \nDownload our app for better experience & great discounts
+              \nhttp://bit.ly/meatable
+            \nPlease provide the Pincode to continue ordering on WhatsApp.
+          `
+          );
+          res.end();
+        }
+
+        if (inputdata.toLowerCase() == 'cls') {
+          database
+            .ref('chatbot')
+            .child(userData.sender.phone.toString())
+            .remove();
+        }
 
         if (count == 6) {
           let foodItems = snap.child('MyData').child('foodItem').val();
@@ -309,7 +374,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
 
             let product = getAllOrderedItems(productref, foodItems);
             let tempArray = product.split('  |  ');
-            let finalOrderDetails = tempArray.join('\n');
+
+            let uppercaseOrderString = tempArray.join('\n');
+            let finalOrderDetails = titleCase(uppercaseOrderString);
 
             let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
 
@@ -328,6 +395,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             res.send(
               'Thanks for ordering with us. We will soon update you with the status.'
             );
+            res.end();
           } else if (inputdata == 2) {
             database
               .ref('chatbot')
@@ -350,10 +418,17 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('count')
               .set(3);
             res.send(menuCard);
-            let msg = `Please enter ItemId and quantity`;
-            sendMsgFromBot(phone, msg);
+            res.end();
+
+            // let msg = `Please enter ItemId and quantity`;
+            let msg = `To place your order, please select product ID and Quantity\nEg. for Chicken Skin out 1kg,\nC1 1 kg
+            `;
+            setTimeout(() => {
+              sendMsgFromBot(phone, msg);
+            }, 100);
           } else {
             res.send('please enter valid Input!');
+            res.end();
           }
         }
 
@@ -391,10 +466,12 @@ exports.apicall = functions.https.onRequest((req, res) => {
                 Object.values(areaAndPincodeSheet)[index]
               }\nPlease choose an area.`
             );
+            res.end();
           } else {
             res.send(
-              'We dont provide out services to this address.\n please try different pin.'
+              `We are not servicing this pin code currently, we hope to serve you soon. Please try a different pin code. `
             );
+            res.end();
           }
         }
         if (count == 2) {
@@ -419,88 +496,78 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('areaCode')
             .set(inputdata);
           res.send(menuCard);
-          let msg = 'Please enter ItemId and quantity';
-          sendMsgFromBot(phone, msg);
+          res.end();
+
+          let msg = `To place your order, please select product ID and Quantity\nEg. for Chicken Skin out 1kg,\nC1 1 kg
+            `;
+          setTimeout(() => {
+            sendMsgFromBot(phone, msg);
+          }, 100);
         }
         if (count == 3) {
           var productArr = inputdata.split(' ');
-          let name = productArr[0].toUpperCase();
-          if (name != 'X') {
-            if (isNaN(productArr[0])) {
-              //! its product name or other name
-              let foodItems = snap.child('MyData').child('foodItem').val();
-              if (foodItems.includes(name)) {
-                let productId = foodItems.indexOf(name) + 1;
-                database
-                  .ref(`chatbot`)
-                  .child(phone)
-                  .child('History')
-                  .child(mainTimestamp)
-                  .child('Messages')
-                  .child(time)
-                  .set(inputdata);
 
-                database
-                  .ref('chatbot')
-                  .child(userData.sender.phone)
-                  .child('History')
-                  .child(mainTimestamp)
-                  .child('Product')
-                  .child(productId)
-                  .set({
-                    item: name,
-                    Quantity: productArr[1],
-                  });
+          // !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+          let id = productArr[0];
+          let pId = id.toUpperCase(); // uppercase product Id
+          let temp = productArr.splice(1);
+          let pQuantity = temp.join('');
+          console.log(pId, pQuantity);
+          let allProducts = snap.child('MyData').child('SheetProduct').val();
+          let allProductids = Object.keys(allProducts);
 
-                res.send(
-                  'Please enter next item and quantity\nPress x to finish'
-                );
-              } else {
-                res.send(
-                  'We Dont Have That Product Please Check Again and Order another product! 1'
-                );
-              }
+          let tempToCheckProductId = allProductids.map((e) => {
+            //? uppercasing each product
+            return e.toUpperCase();
+          });
+
+          if (pId != 'X') {
+            //? trying to enter product details
+            if (tempToCheckProductId.includes(pId)) {
+              // ? product is available
+              let pName = allProducts[pId];
+              console.log(`pName: ${pName}, pId: ${pId}`);
+              database
+                .ref(`chatbot`)
+                .child(phone)
+                .child('History')
+                .child(mainTimestamp)
+                .child('Messages')
+                .child(time)
+                .set(inputdata);
+              database
+                .ref('chatbot')
+                .child(userData.sender.phone)
+                .child('History')
+                .child(mainTimestamp)
+                .child('Product')
+                .child(pId)
+                .set({
+                  item: pName,
+                  Quantity: pQuantity,
+                });
+              res.send(
+                'Please enter next item and quantity\nPress x to finish'
+              );
+              res.end();
             } else {
-              //! it is a number
-
-              let inputId = Number(name);
-              let foodItems = snap.child('MyData').child('foodItem').val();
-
-              if (inputId != 0 && inputId <= foodItems.length) {
-                let productName = foodItems[inputId - 1];
-                database
-                  .ref(`chatbot`)
-                  .child(phone)
-                  .child('History')
-                  .child(mainTimestamp)
-                  .child('Messages')
-                  .child(time)
-                  .set(inputdata);
-
-                database
-                  .ref('chatbot')
-                  .child(userData.sender.phone)
-                  .child('History')
-                  .child(mainTimestamp)
-                  .child('Product')
-                  .child(inputId)
-                  .set({
-                    item: productName,
-                    Quantity: productArr[1],
-                  });
-
-                res.send(
-                  'please enter next item and quantity\npress x to finish'
-                );
-              } else {
-                res.send(
-                  'We Dont Have That Product Please Check Again and Order another product!'
-                );
-              }
+              //? product is not available
+              let msg = `Oops. Looks like you entered a wrong Product Id. Please try again with the correct Product ID and Quantity.
+              \nEg. for Chicken Skin out 1kg,\nC1 1 kg`;
+              res.send(msg);
+              res.end();
             }
           } else {
             //!here you will terminate the loop Input is X
-
+            database
+            .ref(`chatbot`)
+            .child(phone)
+            .child('History')
+            .child(mainTimestamp)
+            .child('Messages')
+            .child(time)
+            .set(inputdata);
+            
             database
               .ref('chatbot')
               .child(phone)
@@ -514,18 +581,13 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child('History')
               .child(mainTimestamp)
               .val();
-            // let arr = a.Product;
-            // let keysarr = Object.keys(arr);
-            // let pId = keysarr[0];
-            // pId = Number(pId);
-            // let productarr = getImageandDish(pId);
             // !==============
             let productList = a.Product;
             let indexes = Object.keys(productList);
 
             let changeThisProduct = productList[indexes[0]];
-            let productName = changeThisProduct.item;
-
+            let uppercaseProductName = changeThisProduct.item;
+            let productName = titleCase(uppercaseProductName);
             database
               .ref('chatbot')
               .child(phone)
@@ -541,8 +603,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
           cutval = snap.child(phone).child('History').child(mainTimestamp).val()
             .ProductIdForCut;
           var a = snap.child(phone).child('History').child(mainTimestamp).val();
-          let arr = a.Product; //  ['chickn','finsh','bla']
-
+          let arr = a.Product;
           let foodItems = snap.child('MyData').child('foodItem').val();
 
           if (cutval != 'done') {
@@ -566,7 +627,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
               } else {
                 // var productarr = getImageandDish(keysarr[i]);
                 // pName = productarr[1];
-                let productName = foodItems[keysarr[i] - 1];
+                let uppercaseProductName = foodItems[keysarr[i] - 1];
+                let productName = titleCase(uppercaseProductName);
                 database
                   .ref('chatbot')
                   .child(phone)
@@ -603,6 +665,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
                 .child('count')
                 .set(5);
               res.send('Please enter your address');
+              res.end();
             }
           }
         }
@@ -640,16 +703,19 @@ exports.apicall = functions.https.onRequest((req, res) => {
             let currentPin = snap.child(phone).child('pincode').val();
 
             let adminNo = getAdminPhone(pincode_AdminNumbers, currentPin);
-            let product = getAllOrderedItems(productref, foodItems);
+            let product = getAllOrderedItems(productref);
             let tempArray = product.split('  |  ');
-            let finalOrderDetails = tempArray.join('\n');
+            let uppercaseOrderString = tempArray.join('\n');
+            let finalOrderDetails = titleCase(uppercaseOrderString);
             let name = snap.child(phone).val().name;
             let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
             sendMsgFromBot(adminNo, message);
             // *asd
 
             res.send(
-              'Thanks for ordering with us. We will soon update you with the status.'
+              `Order Summery\n*${finalOrderDetails}* 
+              \nThanks for ordering with us. We will soon update you with the status.
+              \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
             );
 
             let pincode = currentPin;
@@ -736,7 +802,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
 
           let product = getAllOrderedItems(productref, foodItems);
           let tempArray = product.split('  |  ');
-          let finalOrderDetails = tempArray.join('\n');
+
+          let uppercaseOrderString = tempArray.join('\n');
+          let finalOrderDetails = titleCase(uppercaseOrderString);
 
           let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
 
@@ -750,8 +818,13 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child(mainTimestamp)
             .child('ProductIdForCut')
             .remove();
+          // res.send(
+          //   'Thanks for ordering with us. We will soon update you with the status.'
+          // );
           res.send(
-            'Thanks for ordering with us. We will soon update you with the status.'
+            `Order Summery\n*${finalOrderDetails}* 
+            \nThanks for ordering with us. We will soon update you with the status.
+            \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
           );
 
           database
@@ -809,9 +882,17 @@ exports.apicall = functions.https.onRequest((req, res) => {
           .child(timestamp)
           .child('count')
           .set(1);
+        // res.send(
+        //   `Hello ${userData.sender.name},\nPlease provide the PIN Code.`
+        // );
         res.send(
-          `Hello ${userData.sender.name},\nPlease provide the PIN Code.`
+          `Hello ${userData.sender.name},\nWelcome to Meatable ! \nDelivering Seafood, Mutton and Chicken Conveniently Fresh: directly from source to gated communities!
+          \nDownload our app for better experience & great discounts
+            \nhttp://bit.ly/meatable
+          \nPlease provide the Pincode to continue ordering on WhatsApp.
+        `
         );
+        res.end();
       }
     });
 
@@ -960,7 +1041,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
 
 //       // ? perform all operations you want here only!
 //       ordersheet.map((row) => {
-//         if ((row[7] == 'processing' || row[7] == 'Processing') && row[8]) {
+//  let status = row[7].toLowerCase();
+//   if ((status == 'processing') && row[8]) {
+// //        if ((row[7] == 'processing' || row[7] == 'Processing') && row[8]) {
 //           /*  ---------
 //       ? Variables
 //     ----------*/
