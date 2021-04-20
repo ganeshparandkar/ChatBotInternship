@@ -124,6 +124,15 @@ exports.apicall = functions.https.onRequest((req, res) => {
     return orderSummary;
   };
   // ----------------------------------------------------------------------------------
+  function linebylineproduct(string) {
+    let a = string.split(' | ');
+    b = a.map((e) => {
+      return `*${e}*\n`;
+    });
+    b = b.join('');
+    console.log(b);
+  }
+  // ----------------------------------------------------------------------------------
   const sendMsgFromBot = (number, msg) => {
     //! change {source,botName,apiKey } according to bot
     const checkNo = (phoneNumber) => {
@@ -241,7 +250,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
         let finalHr = Number(checkMins.split(':')[0]);
         let min = Number(checkMins.split(':')[1]);
         let finalMin = finalHr * 60 + min;
-        if (finalMin > 15 && count != 6) {
+        if (finalMin > 15 && count != 6 && inputdata != 1 && inputdata != 2) {
           database
             .ref(`chatbot`)
             .child(phone)
@@ -284,7 +293,10 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .val();
 
           let allProductList = getAllOrderedItems(productref);
-
+          let tempArray = allProductList.split(' | ').map((e) => {
+            return `*${e}*`;
+          });
+          let products = tempArray.join('\n');
           database
             .ref(`chatbot`)
             .child(phone)
@@ -309,7 +321,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('count')
             .set(7);
           res.send(
-            `Your last order was\n\n*${allProductList}*\n\nPress 1 for re-order.
+            `Your last order was\n\n*${products}*\n\nPress 1 for re-order.
             \nPress 2 for new order.`
           );
         }
@@ -362,8 +374,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
             let adminNo = getAdminPhone(pincode_AdminNumbers, pincode);
 
             let product = getAllOrderedItems(productref);
-            let tempArray = product.split('  |  ');
-
+            let tempArray = product.split(' | ').map((e) => {
+              return `*${e}*`;
+            });
             let uppercaseOrderString = tempArray.join('\n');
             let finalOrderDetails = titleCase(uppercaseOrderString);
 
@@ -519,6 +532,13 @@ exports.apicall = functions.https.onRequest((req, res) => {
             //   );
             //   res.end();
             // }
+            database
+              .ref('chatbot')
+              .child(userData.sender.phone)
+              .child('History')
+              .child(mainTimestamp)
+              .child('recentProduct')
+              .set(inputdata);
 
             //? trying to enter product details
             if (tempToCheckProductId.includes(pId)) {
@@ -801,22 +821,18 @@ exports.apicall = functions.https.onRequest((req, res) => {
 
             let adminNo = getAdminPhone(pincode_AdminNumbers, currentPin);
             let product = getAllOrderedItems(productref);
-            let tempArray = product.split('  |  ');
+            let tempArray = product.split(' | ').map((e) => {
+              return `*${e}*`;
+            });
             let uppercaseOrderString = tempArray.join('\n');
             let finalOrderDetails = titleCase(uppercaseOrderString);
-            let summaryOrder = [];
-
-            tempArray.forEach(element => {
-              let a = titleCase(element);
-              summaryOrder.push(`${a}\n`);
-            });
             let name = snap.child(phone).val().name;
             let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
             sendMsgFromBot(adminNo, message);
             // *asd
 
             res.send(
-              `Order Summary\n*${summaryOrder}* 
+              `Order Summary\n\n${finalOrderDetails} 
               \nThanks for ordering with us. We will soon update you with the status.
               \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
             );
@@ -901,7 +917,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
           let adminNo = getAdminPhone(pincode_AdminNumbers, currentPin);
 
           let product = getAllOrderedItems(productref);
-          let tempArray = product.split('  |  ');
+          let tempArray = product.split(' | ').map((e) => {
+            return `*${e}*`;
+          });
 
           let uppercaseOrderString = tempArray.join('\n');
           let finalOrderDetails = titleCase(uppercaseOrderString);
@@ -918,8 +936,15 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child(mainTimestamp)
             .child('ProductIdForCut')
             .remove();
+          database
+            .ref('chatbot')
+            .child(phone)
+            .child('History')
+            .child(mainTimestamp)
+            .child('recentProduct')
+            .remove();
           res.send(
-            `Order Summary\n*${finalOrderDetails}* 
+            `Order Summary\n\n${finalOrderDetails}
             \nThanks for ordering with us. We will soon update you with the status.
             \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
           );
