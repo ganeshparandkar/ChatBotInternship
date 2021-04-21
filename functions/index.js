@@ -94,6 +94,7 @@ database connectivity
 //   return sheets;
 // };
 
+// !😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆😆
 exports.apicall = functions.https.onRequest((req, res) => {
   const getAdminPhone = (pincode_AdminNumbers, currentPin) => {
     if (Object.keys(pincode_AdminNumbers).includes(currentPin)) {
@@ -224,6 +225,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
   if (req.method == 'POST') {
     var date, time, timestamp, phone;
 
+    let orderId = Date.now();
+
     database.ref('chatbot').once('value', (snap) => {
       phone = userData.sender.phone.toString();
 
@@ -321,7 +324,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('count')
             .set(7);
           res.send(
-            `Your last order was\n\n*${products}*\n\nPress 1 for re-order.
+            `Your last order was\n\n${products}\n\nPress 1 for re-order.
             \nPress 2 for new order.`
           );
         }
@@ -378,9 +381,9 @@ exports.apicall = functions.https.onRequest((req, res) => {
               return `*${e}*`;
             });
             let uppercaseOrderString = tempArray.join('\n');
-            let finalOrderDetails = titleCase(uppercaseOrderString);
-
-            let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
+            let finalOrderDetails = uppercaseOrderString;
+            product = orderId + ' | ' + product;
+            let message = `New order has been placed.\nOrder id: *${orderId}*\n\n${phone}\n${name}\nAddress: ${address}\n\n${finalOrderDetails}`;
 
             sendMsgFromBot(adminNo, message);
 
@@ -394,8 +397,17 @@ exports.apicall = functions.https.onRequest((req, res) => {
               pincode,
               areaCode
             );
+            //hibro
+            // res.send(
+            //   `Order Summary\n\n${finalOrderDetails}
+            //   \nThanks for ordering with us. We will soon update you with the status.
+            //   \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
+            // );
             res.send(
-              'Thanks for ordering with us. We will soon update you with the status.'
+              `Thank you for choosing Meatable! Your order ID is ${orderId} and summary is:\n\n${finalOrderDetails} 
+We acknowledge your order and shall reach out soon with bill amount.\n 
+To get in touch with our Customer Delight Team ,please click the link below:\n
+https://wa.me/91${adminNo}`
             );
             res.end();
           } else if (inputdata == 2) {
@@ -461,7 +473,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
               .child(time)
               .set(inputdata);
             res.send(
-              `We serve the following areas,\n ${
+              `We serve the following areas,\n${
                 Object.values(areaAndPincodeSheet)[index]
               }\nPlease choose an area.`
             );
@@ -505,15 +517,16 @@ exports.apicall = functions.https.onRequest((req, res) => {
         }
         if (count == 3) {
           let productArr = inputdata.split(' ');
-
+          console.log('length', productArr.length);
+          let arrLength = productArr.length;
           // !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
           let id = productArr[0];
           let pId = id.toUpperCase(); // uppercase product Id
           let temp = productArr.splice(1);
           let pQuantity = temp.join('');
-          console.log(pId, pQuantity);
           let allProducts = snap.child('MyData').child('SheetProduct').val();
           // ?@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
           let allProductids = Object.keys(allProducts);
           let tempToCheckProductId = allProductids.map((e) => {
             //? uppercasing each product
@@ -526,133 +539,174 @@ exports.apicall = functions.https.onRequest((req, res) => {
           // ?@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
           if (pId != 'X') {
-            // if (productArr.split(' ').length < 2) {
-            //   res.send(
-            //     `${productArr.length}  Oops. Looks like you entered a wrong Product Id. Please try again with the correct Product ID and Quantity.\n\nEg. for Chicken Skin out 1kg, enter:\nC1 1 kg`
-            //   );
-            //   res.end();
-            // }
-            database
-              .ref('chatbot')
-              .child(userData.sender.phone)
-              .child('History')
-              .child(mainTimestamp)
-              .child('recentProduct')
-              .set(inputdata);
+            //! if its not x
+            if (pId != 'D') {
+              //! if its not x and also not D
+              if (arrLength != 1) {
+                if (tempToCheckProductId.includes(pId)) {
+                  // ? product is available
 
-            //? trying to enter product details
-            if (tempToCheckProductId.includes(pId)) {
-              // ? product is available
-              let pName = allProducts[pId];
-              console.log(`pName: ${pName}, pId: ${pId}`);
-              database
-                .ref(`chatbot`)
-                .child(phone)
-                .child('History')
-                .child(mainTimestamp)
-                .child('Messages')
-                .child(time)
-                .set(inputdata);
-              database
-                .ref('chatbot')
-                .child(userData.sender.phone)
-                .child('History')
-                .child(mainTimestamp)
-                .child('Product')
-                .child(pId)
-                .set({
-                  item: pName,
-                  Quantity: pQuantity,
-                });
+                  let pName = titleCase(allProducts[pId]);
+                  console.log(`pName: ${pName}, pId: ${pId}`);
 
-              res.send(
-                `Added Product: *${pName}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish 
+                  database
+                    .ref(`chatbot`)
+                    .child(phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('Messages')
+                    .child(time)
+                    .set(inputdata);
+                  database
+                    .ref('chatbot')
+                    .child(userData.sender.phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('Product')
+                    .child(pId)
+                    .set({
+                      item: pName,
+                      Quantity: pQuantity,
+                    });
+                  database
+                    .ref('chatbot')
+                    .child(userData.sender.phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('recentProduct')
+                    .set(pName);
+                  res.send(
+                    `Added Product: *${pName}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish 
                   `
-              );
+                  );
 
-              res.end();
-            }
+                  res.end();
+                }
 
-            // else if (tempToCheckProductName.includes(pId)) {
-            //   let pName = pId;
-            //   console.log('atleast product exist');
+                // else if (tempToCheckProductName.includes(pId)) {
+                //   let pName = pId;
+                //   console.log('atleast product exist');
 
-            //   let index = tempToCheckProductName.indexOf(pName);
+                //   let index = tempToCheckProductName.indexOf(pName);
 
-            //   let productId = tempToCheckProductId[index];
-            //   pName = titleCase(pName);
-            //   console.log(`aaa pName: ${pName}, pId: ${productId}`);
-            //   database
-            //     .ref(`chatbot`)
-            //     .child(phone)
-            //     .child('History')
-            //     .child(mainTimestamp)
-            //     .child('Messages')
-            //     .child(time)
-            //     .set(inputdata);
-            //   database
-            //     .ref('chatbot')
-            //     .child(userData.sender.phone)
-            //     .child('History')
-            //     .child(mainTimestamp)
-            //     .child('Product')
-            //     .child(productId)
-            //     .set({
-            //       item: pName,
-            //       Quantity: pQuantity,
-            //     });
-            // res.send(
-            //   'Please enter next item and quantity\nPress x to finish'
-            // );
-            //   res.end();
-            // }
-            // else {
-            //   //? product is not available
-            //   let msg = `Oops. Looks like you entered a wrong Product Id. Please try again with the correct Product ID and Quantity.
-            //   \nEg. for Chicken Skin out 1kg,\nC1 1 kg`;
-            //   res.send(msg);
-            //   res.end();
-            // }
-            else {
-              let randomId = Math.random().toString(36).slice(2);
+                //   let productId = tempToCheckProductId[index];
+                //   pName = titleCase(pName);
+                //   console.log(`aaa pName: ${pName}, pId: ${productId}`);
+                //   database
+                //     .ref(`chatbot`)
+                //     .child(phone)
+                //     .child('History')
+                //     .child(mainTimestamp)
+                //     .child('Messages')
+                //     .child(time)
+                //     .set(inputdata);
+                //   database
+                //     .ref('chatbot')
+                //     .child(userData.sender.phone)
+                //     .child('History')
+                //     .child(mainTimestamp)
+                //     .child('Product')
+                //     .child(productId)
+                //     .set({
+                //       item: pName,
+                //       Quantity: pQuantity,
+                //     });
+                // res.send(
+                //   'Please enter next item and quantity\nPress x to finish'
+                // );
+                //   res.end();
+                // }
+                // else {
+                //   //? product is not available
+                //   let msg = `Oops. Looks like you entered a wrong Product Id. Please try again with the correct Product ID and Quantity.
+                //   \nEg. for Chicken Skin out 1kg,\nC1 1 kg`;
+                //   res.send(msg);
+                //   res.end();
+                // }
+                else {
+                  let randomId = Math.random().toString(36).slice(2);
 
-              database
-                .ref(`chatbot`)
+                  database
+                    .ref(`chatbot`)
+                    .child(phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('Messages')
+                    .child(time)
+                    .set(inputdata);
+
+                  database
+                    .ref('chatbot')
+                    .child(userData.sender.phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('Product')
+                    .child(randomId)
+                    .set({
+                      item: id,
+                      Quantity: pQuantity,
+                    });
+
+                  database
+                    .ref('chatbot')
+                    .child(userData.sender.phone)
+                    .child('History')
+                    .child(mainTimestamp)
+                    .child('recentProduct')
+                    .set(id);
+                  res.send(
+                    `Added Product: *${id}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish 
+                    `
+                  );
+                  res.end();
+                }
+              } else {
+                console.log('***********', productArr.length, productArr);
+
+                res.send(
+                  `Oops. Looks like you entered a wrong Product Id. Please try again with the correct Product ID and Quantity.\n\nEg. for Chicken Skin out 1kg, enter:\nC1 1 kg`
+                );
+              }
+            } else {
+              //! if inputdata  == D or d -> delete the recent one
+              let myProducts = snap
                 .child(phone)
-                .child('History')
-                .child(mainTimestamp)
-                .child('Messages')
-                .child(time)
-                .set(inputdata);
-
-              database
-                .ref('chatbot')
-                .child(userData.sender.phone)
                 .child('History')
                 .child(mainTimestamp)
                 .child('Product')
-                .child(randomId)
-                .set({
-                  item: id,
-                  Quantity: pQuantity,
-                });
-              database
-                .ref(`chatbot`)
+                .val();
+              let myProductKeys = Object.keys(myProducts);
+              let pName = snap
                 .child(phone)
                 .child('History')
                 .child(mainTimestamp)
-                .child('lProduct')
-                .set(id);
-              database
-                .ref(`chatbot`)
-                .child(phone)
-                .child('History')
-                .child(mainTimestamp)
-                .child('lPQuantity')
-                .set(pQuantity);
+                .child('recentProduct')
+                .val();
+              console.log('product name', pName);
+
+              for (let i = 0; i < myProductKeys.length; i++) {
+                const e = myProductKeys[i];
+                console.log(myProducts[e]);
+                if (myProducts[e].item == pName) {
+                  console.log(e);
+                  try {
+                    database
+                      .ref('chatbot')
+                      .child(phone)
+                      .child('History')
+                      .child(mainTimestamp)
+                      .child('Product')
+                      .child(e)
+                      .remove();
+                    console.log('removed');
+                  } catch (error) {
+                    console.log(error);
+                  }
+                  break;
+                }
+              }
               res.send(
-                `Added Product: *${id}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish 
-                    `
+                `Product ${pName} Deleted from the cart!\nPlease enter next product\n-press X to exit.`
               );
               res.end();
             }
@@ -825,17 +879,22 @@ exports.apicall = functions.https.onRequest((req, res) => {
               return `*${e}*`;
             });
             let uppercaseOrderString = tempArray.join('\n');
-            let finalOrderDetails = titleCase(uppercaseOrderString);
+            let finalOrderDetails = uppercaseOrderString;
             let name = snap.child(phone).val().name;
-            let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
+            let message = `New order has been placed.\nOrder id: *${orderId}*\n\n${phone}\n${name}\nAddress: ${address}\n\n${finalOrderDetails}`;
+            product = orderId + ' | ' + product;
+
             sendMsgFromBot(adminNo, message);
             // *asd
 
             res.send(
-              `Order Summary\n\n${finalOrderDetails} 
-              \nThanks for ordering with us. We will soon update you with the status.
-              \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
+              `Thank you for choosing Meatable! Your order ID is ${orderId} and summary is:\n\n${finalOrderDetails}\n\nWe acknowledge your order and shall reach out soon with bill amount.\nTo get in touch with our Customer Delight Team ,please click the link below:\nhttps://wa.me/91${adminNo}`
             );
+            // res.send(
+            //   `Order Summary\n\n${finalOrderDetails}
+            //   \nThanks for ordering with us. We will soon update you with the status.
+            //   \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
+            // );
 
             let pincode = currentPin;
             let areaCode = snap.child(phone).val().areaCode;
@@ -922,9 +981,10 @@ exports.apicall = functions.https.onRequest((req, res) => {
           });
 
           let uppercaseOrderString = tempArray.join('\n');
-          let finalOrderDetails = titleCase(uppercaseOrderString);
+          let finalOrderDetails = uppercaseOrderString;
 
-          let message = `New order has been placed.\n\n${phone}\n${name}\n\n${finalOrderDetails}`;
+          let message = `New order has been placed.\nOrder id: *${orderId}*\n\n${phone}\n${name}\nAddress: ${address}\n\n${finalOrderDetails}`;
+          product = orderId + ' | ' + product;
 
           sendMsgFromBot(adminNo, message);
 
@@ -944,10 +1004,13 @@ exports.apicall = functions.https.onRequest((req, res) => {
             .child('recentProduct')
             .remove();
           res.send(
-            `Order Summary\n\n${finalOrderDetails}
-            \nThanks for ordering with us. We will soon update you with the status.
-            \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
+            `Thank you for choosing Meatable! Your order ID is ${orderId} and summary is:\n\n${finalOrderDetails}\n\nWe acknowledge your order and shall reach out soon with bill amount.\nTo get in touch with our Customer Delight Team ,please click the link below:\nhttps://wa.me/91${adminNo}`
           );
+          // res.send(
+          //   `Order Summary\n\n${finalOrderDetails}
+          //   \nThanks for ordering with us. We will soon update you with the status.
+          //   \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
+          // );
 
           database
             .ref(`chatbot`)
@@ -1174,7 +1237,8 @@ exports.apicall = functions.https.onRequest((req, res) => {
 //           phone = row[1];
 //           product = row[3];
 //           amount = row[8];
-//           let msg = `Your order is now being processed.\n Your total cost will be Rs.${amount}`;
+//           // let msg = `Your order is now being processed.\n Your total cost will be Rs.${amount}`;
+//           let msg = `Your order is ready and will be out for delivery soon. Your Bill amount is ${amount}\nPlease click the link below to make the payment:\nPayment link`;
 //           // =-----------------------
 
 //           console.log(
