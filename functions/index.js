@@ -397,12 +397,7 @@ exports.apicall = functions.https.onRequest((req, res) => {
               pincode,
               areaCode
             );
-            //hibro
-            // res.send(
-            //   `Order Summary\n\n${finalOrderDetails}
-            //   \nThanks for ordering with us. We will soon update you with the status.
-            //   \nTo know the status of your order while we are processing, please click on the link below https://wa.me/91${adminNo} . To get in touch with our Customer Delight Team.`
-            // );
+
             res.send(
               `Thank you for choosing Meatable! Your order ID is ${orderId} and summary is:\n\n${finalOrderDetails} 
 We acknowledge your order and shall reach out soon with bill amount.\n 
@@ -519,13 +514,12 @@ https://wa.me/91${adminNo}`
           let productArr = inputdata.split(' ');
           console.log('length', productArr.length);
           let arrLength = productArr.length;
-          // !@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+          
           let id = productArr[0];
           let pId = id.toUpperCase(); // uppercase product Id
           let temp = productArr.splice(1);
           let pQuantity = temp.join('');
           let allProducts = snap.child('MyData').child('SheetProduct').val();
-          // ?@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
           let allProductids = Object.keys(allProducts);
           let tempToCheckProductId = allProductids.map((e) => {
@@ -576,7 +570,7 @@ https://wa.me/91${adminNo}`
                     .child('recentProduct')
                     .set(pName);
                   res.send(
-                    `Added Product: *${pName}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish 
+                    `Added Product: *${pName}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish\n- Enter d to delete it from the cart. 
                   `
                   );
 
@@ -655,7 +649,7 @@ https://wa.me/91${adminNo}`
                     .child('recentProduct')
                     .set(id);
                   res.send(
-                    `Added Product: *${id}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish 
+                    `Added Product: *${id}* | Quantity: *${pQuantity}* to the cart\n- Please enter next item and quantity\n- Enter x to finish\n- Enter d to delete it from the cart.
                     `
                   );
                   res.end();
@@ -706,7 +700,7 @@ https://wa.me/91${adminNo}`
                 }
               }
               res.send(
-                `Product ${pName} Deleted from the cart!\nPlease enter next product\n-press X to exit.`
+                `Product *${pName}* Deleted from the cart!\nPlease enter next product\n- Enter x to finish.`
               );
               res.end();
             }
@@ -1150,120 +1144,120 @@ https://wa.me/91${adminNo}`
 });
 //! :😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃😃
 
-// exports.scheduledFunction = functions.pubsub
-//   .schedule('*/10 * * * *')
-//   .onRun((context) => {
-//     console.log('This will be run every 15 minutes!', context);
+exports.scheduledFunction = functions.pubsub
+  .schedule('*/10 * * * *')
+  .onRun((context) => {
+    console.log('This will be run every 15 minutes!', context);
 
-//     const sendMsgFromBot = (number, msg) => {
-//       //! change {source,botName,apiKey } according to bot
-//       const checkNo = (phoneNumber) => {
-//         if (phoneNumber.toString().slice(0, 2) == 91) {
-//           return phoneNumber;
-//         } else {
-//           return `91${phoneNumber}`;
-//         }
-//       };
-//       let newNumber = checkNo(number);
-//       console.log('infunc No', newNumber);
-//       let destination = newNumber;
+    const sendMsgFromBot = (number, msg) => {
+      //! change {source,botName,apiKey } according to bot
+      const checkNo = (phoneNumber) => {
+        if (phoneNumber.toString().slice(0, 2) == 91) {
+          return phoneNumber;
+        } else {
+          return `91${phoneNumber}`;
+        }
+      };
+      let newNumber = checkNo(number);
+      console.log('infunc No', newNumber);
+      let destination = newNumber;
 
-//       // ! ProductionBot
-//       // ?---------------------------------------------------------------
-//       var source = '917795662042';
-//       let botName = 'Meatable';
-//       let apiKey = 'xbfjxahyq0k6xe1gtvahda9rygomfhpo';
-//       // ?---------------------------------------------------------------
+      // ! ProductionBot
+      // ?---------------------------------------------------------------
+      var source = '917795662042';
+      let botName = 'Meatable';
+      let apiKey = 'xbfjxahyq0k6xe1gtvahda9rygomfhpo';
+      // ?---------------------------------------------------------------
 
-//       var config = {
-//         method: 'post',
-//         url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=${source}&destination=${destination}&message=${msg}&src.name=${botName}`,
-//         headers: {
-//           'Cache-Control': 'no-cache',
-//           'Content-Type': 'application/x-www-form-urlencoded',
-//           apikey: apiKey,
-//           'cache-control': 'no-cache',
-//         },
-//       };
-//       axios(config)
-//         .then(function (response) {
-//           console.log(JSON.stringify(response.data));
-//         })
-//         .catch(function (error) {
-//           console.log(error);
-//         });
-//     };
+      var config = {
+        method: 'post',
+        url: `https://api.gupshup.io/sm/api/v1/msg?channel=whatsapp&source=${source}&destination=${destination}&message=${msg}&src.name=${botName}`,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          apikey: apiKey,
+          'cache-control': 'no-cache',
+        },
+      };
+      axios(config)
+        .then(function (response) {
+          console.log(JSON.stringify(response.data));
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    };
 
-//     const client = new google.auth.JWT(
-//       keys.client_email,
-//       null,
-//       keys.private_key,
-//       ['https://www.googleapis.com/auth/spreadsheets']
-//     );
+    const client = new google.auth.JWT(
+      keys.client_email,
+      null,
+      keys.private_key,
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
 
-//     client.authorize((err, tokens) => {
-//       if (err) {
-//         return;
-//       } else {
-//         myFunc(client);
-//       }
-//     });
+    client.authorize((err, tokens) => {
+      if (err) {
+        return;
+      } else {
+        myFunc(client);
+      }
+    });
 
-//     const myFunc = async (cl) => {
-//       const gsapi = google.sheets({
-//         version: 'v4',
-//         auth: cl,
-//       });
+    const myFunc = async (cl) => {
+      const gsapi = google.sheets({
+        version: 'v4',
+        auth: cl,
+      });
 
-//       //? your excel sheet Details
-//       let ordersheet = {
-//         spreadsheetId: '1E8ZYti2gunPZkybHtlBElEW4rFITwmXRz3Pbn3dLbEo', // pincode and address sheet
-//         range: 'Sheet1!A1:I1000',
-//       };
+      //? your excel sheet Details
+      let ordersheet = {
+        spreadsheetId: '1E8ZYti2gunPZkybHtlBElEW4rFITwmXRz3Pbn3dLbEo', // pincode and address sheet
+        range: 'Sheet1!A1:I1000',
+      };
 
-//       let allorders = await gsapi.spreadsheets.values.get(ordersheet);
-//       ordersheet = allorders.data.values;
+      let allorders = await gsapi.spreadsheets.values.get(ordersheet);
+      ordersheet = allorders.data.values;
 
-//       // ? perform all operations you want here only!
-//       ordersheet.map((row) => {
-//  let status = row[7].toLowerCase();
-//   if ((status == 'processing') && row[8]) {
-// //        if ((row[7] == 'processing' || row[7] == 'Processing') && row[8]) {
-//           /*  ---------
-//       ? Variables
-//     ----------*/
-//           let name, phone, product, amount;
-//           name = row[2];
-//           phone = row[1];
-//           product = row[3];
-//           amount = row[8];
-//           // let msg = `Your order is now being processed.\n Your total cost will be Rs.${amount}`;
-//           let msg = `Your order is ready and will be out for delivery soon. Your Bill amount is ${amount}\nPlease click the link below to make the payment:\nPayment link`;
-//           // =-----------------------
+      // ? perform all operations you want here only!
+      ordersheet.map((row) => {
+        let status = row[7].toLowerCase();
+        if (status == 'processing' && row[8]) {
+          //        if ((row[7] == 'processing' || row[7] == 'Processing') && row[8]) {
+          /*  ---------
+      ? Variables
+    ----------*/
+          let name, phone, product, amount;
+          name = row[2];
+          phone = row[1];
+          product = row[3];
+          amount = row[8];
+          // let msg = `Your order is now being processed.\n Your total cost will be Rs.${amount}`;
+          let msg = `Your order is ready and will be out for delivery soon. Your Bill amount is *${amount}*\nPlease click the link below to make the payment:\nPayment link`;
+          // =-----------------------
 
-//           console.log(
-//             `\nname: ${name}\nphone: ${phone}\nproduct: ${product}\n`
-//           );
+          // console.log(
+          //   `\nname: ${name}\nphone: ${phone}\nproduct: ${product}\n`
+          // );
 
-//           sendMsgFromBot(phone, msg);
-//           return (row[7] = 'processed');
-//         } else {
-//           return row;
-//         }
-//       });
-//       // =------------------------------------------------------------------------------------------
+          sendMsgFromBot(phone, msg);
+          return (row[7] = 'processed');
+        } else {
+          return row;
+        }
+      });
+      // =------------------------------------------------------------------------------------------
 
-//       const update = {
-//         spreadsheetId: '1E8ZYti2gunPZkybHtlBElEW4rFITwmXRz3Pbn3dLbEo',
-//         range: 'Sheet1!A1:I1000',
-//         valueInputOption: 'USER_ENTERED',
-//         resource: { values: ordersheet },
-//       };
+      const update = {
+        spreadsheetId: '1E8ZYti2gunPZkybHtlBElEW4rFITwmXRz3Pbn3dLbEo',
+        range: 'Sheet1!A1:I1000',
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: ordersheet },
+      };
 
-//       let res = await gsapi.spreadsheets.values.update(update);
-//       console.log(res);
-//       return ordersheet;
-//     };
+      let res = await gsapi.spreadsheets.values.update(update);
+      console.log(res);
+      return ordersheet;
+    };
 
-//     return null;
-//   });
+    return null;
+  });
